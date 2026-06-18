@@ -7,9 +7,11 @@ import com.example.storemobile.data.Session
 import com.example.storemobile.data.SessionManager
 import com.example.storemobile.data.remote.ApiProvider
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed interface RootState {
@@ -24,6 +26,13 @@ class RootViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _state = MutableStateFlow<RootState>(RootState.Loading)
     val state: StateFlow<RootState> = _state.asStateFlow()
+
+    /** App-wide theme preference ("system" | "light" | "dark"). */
+    val themeMode: StateFlow<String> = session.themeMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = SessionManager.THEME_SYSTEM
+    )
 
     init {
         viewModelScope.launch {

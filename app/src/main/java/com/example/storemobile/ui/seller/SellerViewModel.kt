@@ -14,14 +14,17 @@ import com.example.storemobile.data.model.OrderRequest
 import com.example.storemobile.data.model.Product
 import com.example.storemobile.data.model.SaleMode
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SellerUiState(
     val products: List<Product> = emptyList(),
     val productsLoading: Boolean = false,
     val productsError: String? = null,
+    val refreshing: Boolean = false,
     val search: String = "",
 
     val cart: List<CartLine> = emptyList(),
@@ -51,6 +54,17 @@ class SellerViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _ui = MutableStateFlow(SellerUiState())
     val ui: StateFlow<SellerUiState> = _ui.asStateFlow()
+
+    /** App-wide theme preference ("system" | "light" | "dark"). */
+    val themeMode: StateFlow<String> = session.themeMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = SessionManager.THEME_SYSTEM
+    )
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch { session.saveThemeMode(mode) }
+    }
 
     var userId: Int = -1
     var userName: String = "Sotuvchi"
@@ -88,6 +102,48 @@ class SellerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setSearch(value: String) {
         _ui.value = _ui.value.copy(search = value)
+    }
+
+    /**
+     * Manual "pull to refresh" via the refresh button. Keeps the current grid
+     * visible (uses [refreshing] instead of the full-screen loader) and quietly
+     * re-fetches products + clients so newly added products / stock appear.
+     */
+    fun refreshProducts() {
+        if (_ui.value.refreshing) return
+        _ui.value = _ui.value.copy(refreshing = true)
+        viewModelScope.launch {
+            when (val r = repo.getProducts()) {
+                is ApiResult.Success -> _ui.value = _ui.value.copy(
+                    products = r.data.sortedBy { it.name },
+                    productsError = null
+                )
+                is ApiResult.Error ->
+                    if (_ui.value.products.isEmpty())
+                        _ui.value = _ui.value.copy(productsError = r.message)
+            }
+            _ui.value = _ui.value.copy(refreshing = false)
+            loadClients()
+        }
+    }
+
+    /**
+     * Silent background refresh used by the lightweight auto-poll while the
+     * Products tab is open. No spinners, no error toasts — it just updates the
+     * list in place when the admin adds a product / makes a stock entry. Only
+     * the small products endpoint is hit, so it is gentle on the server.
+     */
+    fun autoRefreshProducts() {
+        if (_ui.value.refreshing || _ui.value.productsLoading) return
+        viewModelScope.launch {
+            when (val r = repo.getProducts()) {
+                is ApiResult.Success -> _ui.value = _ui.value.copy(
+                    products = r.data.sortedBy { it.name },
+                    productsError = null
+                )
+                is ApiResult.Error -> { /* stay quiet on transient failures */ }
+            }
+        }
     }
 
     private fun loadClients() {

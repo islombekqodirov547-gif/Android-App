@@ -26,12 +26,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,10 +43,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.storemobile.data.model.Product
 import com.example.storemobile.ui.components.EmptyState
@@ -63,6 +70,25 @@ fun ProductsTab(
     val ui by vm.ui.collectAsStateWithLifecycle()
     var dialogProduct by remember { mutableStateOf<Product?>(null) }
 
+    // ── Yengil avtomatik yangilash ──
+    // 1) Mahsulotlar tabi ochiq turganda har 20 soniyada jimgina yangilanadi
+    //    (faqat kichik /Products endpointi — serverni qiynamaydi).
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(20_000)
+            vm.autoRefreshProducts()
+        }
+    }
+    // 2) Ilova fonga o'tib qaytganda (yoki ekranga qaytilganda) darhol yangilanadi.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) vm.autoRefreshProducts()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -77,6 +103,8 @@ fun ProductsTab(
                 Text("Assalomu alaykum,", color = Jesko.TextSecondary, fontSize = 13.sp)
                 Text(sellerName, color = Jesko.TextPrimary, fontWeight = FontWeight.Black, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            RefreshButton(refreshing = ui.refreshing, onClick = { vm.refreshProducts() })
+            Spacer(Modifier.width(10.dp))
             CartShortcut(count = ui.cartCount, onClick = onOpenCart)
         }
 
@@ -136,6 +164,28 @@ fun ProductsTab(
                 dialogProduct = null
             }
         )
+    }
+}
+
+@Composable
+private fun RefreshButton(refreshing: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(48.dp)
+            .background(Jesko.CardElevated, RoundedCornerShape(14.dp))
+            .border(1.dp, Jesko.Border, RoundedCornerShape(14.dp))
+            .clickable(enabled = !refreshing, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (refreshing) {
+            CircularProgressIndicator(
+                color = Jesko.GoldLight,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(20.dp)
+            )
+        } else {
+            Icon(Icons.Filled.Refresh, "Yangilash", tint = Jesko.GoldLight, modifier = Modifier.size(22.dp))
+        }
     }
 }
 

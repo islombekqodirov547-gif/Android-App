@@ -64,6 +64,7 @@ import com.example.storemobile.ui.components.EmptyState
 import com.example.storemobile.ui.components.JeskoButton
 import com.example.storemobile.ui.components.JeskoButtonStyle
 import com.example.storemobile.ui.components.JeskoTextField
+import com.example.storemobile.ui.components.JeskoThemeSelector
 import com.example.storemobile.ui.components.LoadingBox
 import com.example.storemobile.ui.components.StatusPill
 import com.example.storemobile.ui.components.clickableNoRipple
@@ -382,6 +383,13 @@ private fun SyncTab(vm: BossViewModel, ui: BossUiState, onLoggedOut: () -> Unit)
                         Text("Boshliq", color = Jesko.TextSecondary, fontSize = 12.sp)
                     }
                 }
+            }
+            // Ko'rinish (tema) tanlovi
+            item {
+                val themeMode by vm.themeMode.collectAsStateWithLifecycle()
+                Text("KO'RINISH", color = Jesko.TextSecondary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Spacer(Modifier.height(8.dp))
+                JeskoThemeSelector(current = themeMode, onSelect = { vm.setThemeMode(it) })
             }
             item {
                 JeskoButton(
