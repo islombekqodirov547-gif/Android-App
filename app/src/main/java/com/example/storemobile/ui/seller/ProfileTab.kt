@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.storemobile.data.remote.ApiProvider
 import com.example.storemobile.ui.components.JeskoButton
 import com.example.storemobile.ui.components.JeskoButtonStyle
+import com.example.storemobile.ui.components.JeskoThemeSelector
 import com.example.storemobile.ui.theme.Jesko
 import com.example.storemobile.util.Format
 
@@ -49,6 +50,7 @@ fun ProfileTab(
     onLoggedOut: () -> Unit
 ) {
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val themeMode by vm.themeMode.collectAsStateWithLifecycle()
     // Tushum: naqd (Paid) va qarzga (Debt) sotilganlarning hammasi hisoblanadi.
     // Qarzga sotilgan bo'lsa ham — sotuvchi o'sha qiymatdagi tovarni sotgan.
     val sold = ui.history.filter { it.status == "Paid" || it.status == "Debt" }
@@ -109,6 +111,12 @@ fun ProfileTab(
         InfoRow(Icons.Filled.Dns, "Server", ApiProvider.baseUrl())
         Spacer(Modifier.height(8.dp))
         InfoRow(Icons.Filled.Info, "Ilova versiyasi", "JESKO Savdo v1.0")
+
+        Spacer(Modifier.height(20.dp))
+
+        Text("KO'RINISH", color = Jesko.TextSecondary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        Spacer(Modifier.height(8.dp))
+        JeskoThemeSelector(current = themeMode, onSelect = { vm.setThemeMode(it) })
 
         Spacer(Modifier.height(24.dp))
 

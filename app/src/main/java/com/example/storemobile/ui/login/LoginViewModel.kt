@@ -9,6 +9,7 @@ import com.example.storemobile.data.SessionManager
 import com.example.storemobile.data.StoreRepository
 import com.example.storemobile.data.model.Seller
 import com.example.storemobile.data.remote.ApiProvider
+import com.example.storemobile.data.remote.ServerDiscovery
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +26,11 @@ data class LoginUiState(
     val rememberMe: Boolean = true,
     val loggingIn: Boolean = false,
     val error: String? = null,
-    val serverUrl: String = ApiProvider.DEFAULT_BASE_URL
+    val serverUrl: String = ApiProvider.DEFAULT_BASE_URL,
+    // Serverni avtomatik aniqlash holati
+    val discovering: Boolean = false,
+    val discoveryStatus: String? = null,
+    val detectedUrl: String? = null
 )
 
 class LoginViewModel(app: Application) : AndroidViewModel(app) {
@@ -136,6 +141,37 @@ class LoginViewModel(app: Application) : AndroidViewModel(app) {
             session.saveServerUrl(url)
             _ui.value = _ui.value.copy(serverUrl = ApiProvider.baseUrl())
             loadSellers()
+        }
+    }
+
+    /**
+     * Auto-detects the store server on the local Wi-Fi network and fills the
+     * address in for the user. Does not save by itself — the user reviews the
+     * found address and taps "Saqlash" (which persists it across restarts).
+     */
+    fun detectServer() {
+        if (_ui.value.discovering) return
+        _ui.value = _ui.value.copy(
+            discovering = true,
+            discoveryStatus = "Tarmoq tekshirilmoqda...",
+            detectedUrl = null,
+            error = null
+        )
+        viewModelScope.launch {
+            val result = ServerDiscovery.discover()
+            _ui.value = if (result != null) {
+                _ui.value.copy(
+                    discovering = false,
+                    detectedUrl = result.baseUrl,
+                    discoveryStatus = "✓ Server topildi: ${result.ip} — saqlash uchun \"Saqlash\"ni bosing."
+                )
+            } else {
+                _ui.value.copy(
+                    discovering = false,
+                    detectedUrl = null,
+                    discoveryStatus = "Server topilmadi. Telefon do'kon Wi-Fi'siga ulanganini tekshiring."
+                )
+            }
         }
     }
 

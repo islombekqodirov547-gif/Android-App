@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.storemobile.data.SessionManager
 import com.example.storemobile.ui.RootState
 import com.example.storemobile.ui.RootViewModel
 import com.example.storemobile.ui.boss.BossScreen
@@ -39,8 +41,16 @@ class MainActivity : ComponentActivity() {
         splash.setKeepOnScreenCondition { keepSplash }
 
         setContent {
-            JeskoTheme {
-                val rootVm: RootViewModel = viewModel()
+            val rootVm: RootViewModel = viewModel()
+            val themeMode by rootVm.themeMode.collectAsStateWithLifecycle()
+            val systemDark = isSystemInDarkTheme()
+            val darkTheme = when (themeMode) {
+                SessionManager.THEME_LIGHT -> false
+                SessionManager.THEME_DARK -> true
+                else -> systemDark
+            }
+
+            JeskoTheme(darkTheme = darkTheme) {
                 val state by rootVm.state.collectAsStateWithLifecycle()
 
                 if (state !is RootState.Loading) keepSplash = false

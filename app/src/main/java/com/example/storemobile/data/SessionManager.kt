@@ -33,10 +33,16 @@ class SessionManager(private val context: Context) {
         val ROLE = stringPreferencesKey("role")
         val REMEMBER = booleanPreferencesKey("remember")
         val SERVER_URL = stringPreferencesKey("server_url")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val serverUrl: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[Keys.SERVER_URL] ?: ApiProvider.DEFAULT_BASE_URL
+    }
+
+    /** Theme preference: "system" | "light" | "dark". Defaults to system. */
+    val themeMode: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.THEME_MODE] ?: THEME_SYSTEM
     }
 
     /** Returns the saved seller only when "remember me" was enabled — used for auto-login on cold start. */
@@ -67,6 +73,10 @@ class SessionManager(private val context: Context) {
         ApiProvider.setBaseUrl(url)
     }
 
+    suspend fun saveThemeMode(mode: String) {
+        context.dataStore.edit { it[Keys.THEME_MODE] = mode }
+    }
+
     suspend fun saveSession(session: Session, remember: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[Keys.USER_ID] = session.userId
@@ -85,5 +95,11 @@ class SessionManager(private val context: Context) {
             prefs.remove(Keys.ROLE)
             prefs[Keys.REMEMBER] = false
         }
+    }
+
+    companion object {
+        const val THEME_SYSTEM = "system"
+        const val THEME_LIGHT = "light"
+        const val THEME_DARK = "dark"
     }
 }

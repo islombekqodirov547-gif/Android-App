@@ -15,8 +15,10 @@ import com.example.storemobile.data.model.SyncOpRequest
 import com.example.storemobile.data.model.SyncOpType
 import com.example.storemobile.data.model.SyncPushRequest
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -90,6 +92,17 @@ class BossViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _ui = MutableStateFlow(BossUiState())
     val ui: StateFlow<BossUiState> = _ui.asStateFlow()
+
+    /** App-wide theme preference ("system" | "light" | "dark"). */
+    val themeMode: StateFlow<String> = session.themeMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = SessionManager.THEME_SYSTEM
+    )
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch { session.saveThemeMode(mode) }
+    }
 
     // Serverdan kelgan "xom" (asl) qoldiqlar — lokal hisob shulardan ayriladi.
     private var rawClients: List<Client> = emptyList()

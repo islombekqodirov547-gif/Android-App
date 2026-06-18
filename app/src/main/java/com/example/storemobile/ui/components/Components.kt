@@ -19,7 +19,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -235,5 +238,63 @@ fun StatusPill(text: String, color: Color, modifier: Modifier = Modifier) {
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(text, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+/* ───────────────────────────  THEME SELECTOR  ─────────────────────────── */
+
+/**
+ * Segmented control for the app appearance: Tizim (system) / Yorug' (light) /
+ * Tungi (dark). Values match [com.example.storemobile.data.SessionManager]
+ * constants ("system" | "light" | "dark").
+ */
+@Composable
+fun JeskoThemeSelector(
+    current: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val options = listOf(
+        Triple("system", "Tizim", Icons.Filled.BrightnessAuto),
+        Triple("light", "Yorug'", Icons.Filled.LightMode),
+        Triple("dark", "Tungi", Icons.Filled.DarkMode)
+    )
+    Row(
+        modifier
+            .fillMaxWidth()
+            .background(Jesko.Card, RoundedCornerShape(14.dp))
+            .border(1.dp, Jesko.Border, RoundedCornerShape(14.dp))
+            .padding(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        options.forEach { (value, label, icon) ->
+            val active = value == current
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (active) Jesko.Gold.copy(alpha = 0.16f) else Color.Transparent)
+                    .then(
+                        if (active) Modifier.border(1.dp, Jesko.Gold.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        else Modifier
+                    )
+                    .clickableNoRipple(onClick = { onSelect(value) })
+                    .padding(vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    icon, label,
+                    tint = if (active) Jesko.GoldLight else Jesko.TextMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    label,
+                    color = if (active) Jesko.GoldLight else Jesko.TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
+                )
+            }
+        }
     }
 }

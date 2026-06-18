@@ -32,11 +32,14 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -148,6 +151,10 @@ fun LoginScreen(
     if (showServerDialog) {
         ServerDialog(
             current = ui.serverUrl,
+            discovering = ui.discovering,
+            status = ui.discoveryStatus,
+            detectedUrl = ui.detectedUrl,
+            onDetect = { vm.detectServer() },
             onDismiss = { showServerDialog = false },
             onSave = {
                 vm.setServerUrl(it)
@@ -518,10 +525,20 @@ private fun CheckBox(checked: Boolean) {
 @Composable
 private fun ServerDialog(
     current: String,
+    discovering: Boolean,
+    status: String?,
+    detectedUrl: String?,
+    onDetect: () -> Unit,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
     var text by remember { mutableStateOf(current) }
+    // Avtomatik aniqlash topgan manzilni maydonga yozamiz.
+    LaunchedEffect(detectedUrl) {
+        detectedUrl?.let { text = it }
+    }
+    val foundOk = status?.startsWith("✓") == true
+
     AlertDialog(
         containerColor = Jesko.Card,
         onDismissRequest = onDismiss,
@@ -529,18 +546,70 @@ private fun ServerDialog(
         text = {
             Column {
                 Text(
-                    "Kompyuteringizdagi server manzili. Emulyator uchun http://10.0.2.2:5050/, " +
-                            "real telefon uchun kompyuter IP manzili (masalan http://192.168.1.50:5050/). " +
-                            "Diqqat: http:// va 5050-port (server shu portda ishlaydi).",
+                    "Server o'rnatilgan kompyuter manzili. Bilmasangiz \"Avtomatik aniqlash\"ni bosing — " +
+                            "ilova do'kon Wi-Fi'sidagi serverni o'zi topadi.",
                     color = Jesko.TextSecondary, fontSize = 12.sp
                 )
                 Spacer(Modifier.height(14.dp))
+
+                // ── Avtomatik aniqlash tugmasi ──
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Jesko.Gold.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                        .border(1.dp, Jesko.Gold.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .clickable(enabled = !discovering, onClick = onDetect)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (discovering) {
+                        CircularProgressIndicator(
+                            color = Jesko.GoldLight,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Icon(Icons.Filled.Wifi, null, tint = Jesko.GoldLight, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (discovering) "Qidirilmoqda..." else "Serverni avtomatik aniqlash",
+                            color = Jesko.TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp
+                        )
+                        Text(
+                            "Tarmoqdan serverni o'zi topadi",
+                            color = Jesko.TextSecondary, fontSize = 11.sp
+                        )
+                    }
+                }
+
+                // ── Aniqlash natijasi ──
+                if (status != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        status,
+                        color = if (foundOk) Jesko.GreenLight else Jesko.TextMuted,
+                        fontSize = 12.sp,
+                        fontWeight = if (foundOk) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                }
+
+                Spacer(Modifier.height(14.dp))
+                Text("YOKI QO'LDA KIRITING", color = Jesko.TextMuted, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                Spacer(Modifier.height(8.dp))
                 JeskoTextField(
                     value = text,
                     onValueChange = { text = it },
                     placeholder = "http://192.168.1.50:5050/",
                     keyboardType = KeyboardType.Uri,
                     modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Eslatma: http:// va 5050-port (server shu portda ishlaydi). " +
+                            "Emulyator uchun http://10.0.2.2:5050/.",
+                    color = Jesko.TextMuted, fontSize = 11.sp
                 )
             }
         },
