@@ -163,8 +163,9 @@ object Jesko {
     }
 
     /** Switch between the dark and light look. Safe to call repeatedly. */
-    fun setDark(dark: Boolean) {
+    fun applyDark(dark: Boolean) {
         isDark = dark
         apply(if (dark) JeskoDarkPalette else JeskoLightPalette)
     }
+
 }

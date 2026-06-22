@@ -61,7 +61,7 @@ fun JeskoTheme(
 ) {
     // Drive the global brand palette so every `Jesko.*` read reflects the
     // chosen theme (the object is state-backed → automatic recomposition).
-    SideEffect { Jesko.setDark(darkTheme) }
+    SideEffect { Jesko.applyDark(darkTheme) }
 
     val colorScheme = if (darkTheme) JeskoDarkColorScheme else JeskoLightColorScheme
 
